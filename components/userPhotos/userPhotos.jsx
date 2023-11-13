@@ -1,159 +1,219 @@
-import React from "react";
-import { Link, Redirect } from "react-router-dom";
-import { List, Divider, Typography, Grid, Avatar, Card, CardHeader, CardMedia, CardContent } from "@material-ui/core";
-import "./userPhotos.css";
-import axios from "axios";
-import CommentDialog from "../commentDialog/commentDialog";
+import React from 'react';
+import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 
-
-export default class UserPhotos extends React.Component {
+class UserPhotos extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      photos: null, // photos list where each photo contains comments list
-      user: null,   // Author who posts the photo
+      photos: null,
+      add_comment: false,
+      current_photo_id: null,
+      new_comment: '',
     };
   }
 
-  /**
-   * user axios to get photos data and photo's Author data
-   * from user ID
-   *  */
-  axios_fetch_photos_and_user() {
-    // To get photo data
-    axios 
-    .get(`/photosOfUser/${this.props.match.params.userId}`) // photo url
-    .then(response => this.setState({ photos: response.data }))
-    .catch(error => console.log( "/photosOfUser/ Error: ", error));
-
-    // To get photo's Author data
-    axios
-      .get(`/user/${this.props.match.params.userId}`)  // user url
-      .then(response => { 
-        this.setState({ user: response.data });
-        this.props.onUserNameChange(response.data.first_name + ' ' + response.data.last_name);
-        console.log("** UserPhotos: fetched User Photos **");
-      })
-      .catch(error => console.log( "/user/ Error: ", error));
+  componentDidMount() {
+    this.fetchUserPhotos();
+    this.fetchVersionInfo();
   }
 
+  componentDidUpdate(prevProps) {
+    const { match } = this.props;
+    const { userId } = match.params;
 
-  /**
-   * To re-fetch data from server once comment is submitted,
-   * this will lead to update UI immediately once comment sent.
-   */
-  handleCommentSumbit = () => {
-    console.log("Submit was pressed, re-rendering photos and comments");
-    this.axios_fetch_photos_and_user();
+    if (prevProps.match.params.userId !== userId) {
+      this.fetchUserPhotos();
+    }
+  }
+
+  fetchUserPhotos() {
+    const { match } = this.props;
+    const { userId } = match.params;
+
+    axios.get(`/photosOfUser/${userId}`)
+      .then((data) => {
+        this.setState({ photos: data.data });
+      })
+      .catch((error) => {
+        console.error('Error fetching user details:', error);
+      });
+  }
+
+  fetchVersionInfo() {
+    axios.get('/test/info')
+      .then((data) => {
+        // eslint-disable-next-line react/no-unused-state
+        this.setState({ version: data.data });
+      })
+      .catch((error) => {
+        console.error('Error fetching version info:', error);
+      });
+  }
+
+  // Event handler for showing the add comment dialog
+  handleShowAddComment = (photo_id) => {
+    this.setState({
+      add_comment: true,
+      current_photo_id: photo_id,
+    });
   };
 
-  /**
-   * To fetch photos and author data when click the "See Photo" button.
-   *  */ 
-  componentDidMount() {
-    // when there is an id after "/photos/<user_id>"
-    if (this.props.match.params.userId) { 
-      this.axios_fetch_photos_and_user();
-    }
-  }
+  // Event handler for changing the new comment text
+  handleNewCommentChange = (event) => {
+    this.setState({
+      new_comment: event.target.value,
+    });
+  };
 
-  /**
-   * To detect if a new photo is added, re-render if it was.
-   * @param this.props.photoIsUploaded: if a new photo was updated
-   */
-  componentDidUpdate(prevProps) {
-    if (prevProps.photoIsUploaded!==this.props.photoIsUploaded && this.props.photoIsUploaded) {
-        console.log("Trigger re-render");
-        this.axios_fetch_photos_and_user();
-      }
-  }
+  // Event handler for canceling the add comment dialog
+  handleCancelAddComment = () => {
+    this.setState({
+      add_comment: false,
+      new_comment: '',
+      current_photo_id: null,
+    });
+  };
 
-    
+  // Event handler for submitting the new comment
+  handleSubmitAddComment = () => {
+    const { current_photo_id, new_comment } = this.state;
+
+    axios.post(`/commentsOfPhoto/${current_photo_id}`, { comment: new_comment })
+      .then(() => {
+        console.log('Comment added to the database successfully');
+
+        this.setState({
+          add_comment: false,
+          new_comment: '',
+          current_photo_id: null,
+        });
+      })
+      .catch((error) => {
+        console.error('Error adding comment:', error);
+      });
+  };
+
   render() {
-    // If not yet login, redirect to login page
-    if (!this.props.loginUser) {
-      return <Redirect to={`/login-register`} />;
-    }
+    const { photos } = this.state;
+    const { match } = this.props;
+    const { userId } = match.params;
 
-    // If there is no user, then render below:
-    if (!this.state.user) {
-      return <p>Loading</p>;
-    }
-
-    // If there is user photo, then display user photos
     return (
-      this.state.photos && (
-        <Grid justifyContent="flex-start" container spacing={3}>
-          {/* Loop through all the photos */}
-          {this.state.photos.map((photo) => (
+      <div>
+        {photos ? (
+          <div>
+            <Button
+              component={Link}
+              to={`/users/${userId}`}
+              variant="contained"
+              color="primary"
+              style={{ boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)' }}
+            >
+              User Details
+            </Button>
 
-            // Each photo's layout
-            <Grid item xs={6} key={photo._id}>
-              <Card variant="outlined">
-                {/* Each photo's author name and author post time */}
-                <CardHeader
-                  avatar={(
-                    <Avatar style={{ backgroundColor: "#FF7F50" }}>
-                      {this.state.user.first_name[0]}
-                    </Avatar>
-                  )}                
-                  title={(
-                    <Link to={`/users/${this.state.user._id}`}>
-                      {`${this.state.user.first_name} ${this.state.user.last_name}`}
-                    </Link>
-                  )}
-                  subheader={photo.date_time}
-                />
-
-                {/* Each photo's image */}
-                <CardMedia
-                  component="img"
-                  image={`./images/${photo.file_name}`}
-                  alt="Anthor Post"
-                />
-
-                {/* Comments' layout */}
-                <CardContent>
-                  {/* Loop through all comments under the photo */}
-                  {photo.comments && (
-                    <Typography variant="subtitle1">
-                      Comments:
-                      <Divider />
-                    </Typography>
-                  )}
-                  {photo.comments.map((c) => (
-                    <List key={c._id}>
-                      <Typography variant="subtitle2">
-                        <Link to={`/users/${c.user._id}`}>
-                          {`${c.user.first_name} ${c.user.last_name}`}
-                        </Link>
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="textSecondary"
-                        gutterBottom
-                      >
-                        {c.date_time}
-                      </Typography>
-                      <Typography variant="body1">
-                        {`"${c.comment}"`}
-                      </Typography>
-                    </List>
-                  ))}
-
-                  {/* Comment dialog box */}
-                  <CommentDialog
-                    onCommentSumbit={this.handleCommentSumbit}
-                    photo_id={photo._id}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+              {photos.map((photo) => (
+                <div
+                  key={photo._id}
+                  style={{
+                    margin: '10px',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '5px',
+                    boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
+                    backgroundColor: '#fff',
+                  }}
+                >
+                  <img
+                    src={`/images/${photo.file_name}`}
+                    alt={photo.file_name}
+                    style={{ maxWidth: '100%', height: 'auto' }}
                   />
-                </CardContent>
+                  <p style={{ margin: 0 }}><b>Date Taken:</b> {photo.date_time}</p>
 
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )
+                  {photo.comments && photo.comments.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '10px',
+                        border: '1px solid #ccc',
+                        borderRadius: '5px',
+                        backgroundColor: '#f5f5f5',
+                        boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <p style={{ margin: 0, fontWeight: 'bold' }}>Comments:</p>
+                      {photo.comments.map((comment) => (
+                        <div
+                          key={comment._id}
+                          style={{
+                            margin: '10px',
+                            padding: '10px',
+                            border: '1px solid #ccc',
+                            borderRadius: '5px',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
+                          }}
+                        >
+                          <p style={{ margin: 0 }}>{comment.comment}</p>
+                          <p style={{ margin: 0, fontStyle: 'italic' }}>
+                            <b>Commented ON:</b> {comment.date_time}
+                          </p>
+                          <p style={{ margin: 0, fontStyle: 'italic' }}>
+                            <b>Commented BY:</b>
+                            <Link to={`/users/${comment.user._id}`}>{comment.user.first_name} {comment.user.last_name}</Link>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Button to show the add comment dialog */}
+                  <Button
+                    variant="contained"
+                    onClick={() => this.handleShowAddComment(photo._id)}
+                  >
+                    Add Comment
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Comment Dialog */}
+            <Dialog open={this.state.add_comment}>
+              <DialogTitle>Add Comment</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Enter a new comment for the photo.
+                </DialogContentText>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  id="comment"
+                  label="Comment"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  variant="standard"
+                  onChange={this.handleNewCommentChange}
+                  value={this.state.new_comment}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={this.handleCancelAddComment}>Cancel</Button>
+                <Button onClick={this.handleSubmitAddComment}>Add</Button>
+              </DialogActions>
+            </Dialog>
+          </div>
+        ) : (
+          <p>No photos available</p>
+        )}
+      </div>
     );
   }
-
 }
+
+export default UserPhotos;
