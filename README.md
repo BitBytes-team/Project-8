@@ -1,4 +1,5 @@
-Project 7: Sessions and Input1
+Project 7: 
+Sessions and Input1
 In this project, you will extend your work on Project 6 by adding the ability for users to login, comment on photos, and upload new photos. Note that these new feature additions are full stack in that you will need to modify both the front end (React app) and the back end (Node web server and MongoDB database).
 
 Setup
