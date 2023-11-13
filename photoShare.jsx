@@ -1,10 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom';
-import { Grid, Paper, Typography } from '@mui/material';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import { Grid, Typography, Paper} from '@mui/material';
 import './styles/main.css';
 
-import LoginRegister from './components/loginRegister/LoginRegister';
 import TopBar from './components/topBar/TopBar';
 import UserDetail from './components/userDetail/userDetail';
 import UserList from './components/userList/userList';
@@ -14,176 +13,55 @@ class PhotoShare extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      appContext: "",
-      checked: false,
-      upload: false,
-      version: "",
-      userIsLoggedIn: Boolean(localStorage.getItem("sessionState")),
-      user: null,
+      topname: '',
     };
   }
 
-  componentDidMount() {
-    let userId = localStorage.getItem("sessionState");
-    if (userId) {
-      let formData = {
-        user_id: userId,
-      };
-      axios.post("/admin/login", formData).then(response => {
-        // console.log(response.data);
-        this.setState({
-          userIsLoggedIn: true,
-          user: response.data,
-        });
-      }).catch(error => {
-        localStorage.removeItem("sessionState");
-        this.setState({
-          userIsLoggedIn: false,
-          user: null,
-        });
-        console.log(error.response.data);
-      });
-    }
-    axios.get("/test/info").then(response => {
-      this.setState({
-        version: Version: ${response.data.version},
-      });
-    }).catch(error => {
-      console.log(error.message);
-    });
-  }
-
-  componentDidUpdate() {
-    this.getRoot();
-  }
-
-  setContext = (newContext) => {
-    this.setState({
-      appContext: newContext,
-    });
-  }
-
-  handleChange = () => {
-    this.setState(prevState => ({
-      checked: !prevState.checked,
-    }));
+  setTopName = (name) => {
+    this.setState({ topname: name });
   };
 
-  handlinglogin = (data) => {
-    localStorage.setItem("sessionState", data._id);
-    this.setState({
-      userIsLoggedIn: true,
-      user: data,
-    });
-  };
-
-  handlinglogout = () => {
-    axios.post("/admin/logout", {}).then(response => {
-      console.log(response.data);
-      localStorage.removeItem("sessionState");
-      this.setState({
-        userIsLoggedIn: false,
-        user: null,
-      });
-    }).catch(error => {
-      console.log(error.message);
-    });
-  };
-
-  getRoot = () => {
-    return this.state.userIsLoggedIn ? <Redirect to="/" /> : <Redirect to="/login-register" />
-  };
-
-  getLogin = () => {
-    return this.state.userIsLoggedIn ? <Redirect to={/users/${this.state.user._id}} /> :
-        <LoginRegister setContext={this.setContext}
-                       handlinglogin={this.handlinglogin} />
-  };
-
-  render() {
+  render() {  
     return (
-        <BrowserRouter>
-          <div>
-            <Grid container spacing={8}>
-              <Grid item xs={12}>
-                <TopBar topName={this.state.topname}
-                        appContext={this.state.appContext}
-                        user={this.state.user}
-                        version={this.state.version}
-                        checked={this.state.checked}
-                        userIsLoggedIn={this.state.userIsLoggedIn}
-                        handleChange={this.handleChange}
-                        handlinglogout={this.handlinglogout}
-                />
-              </Grid>
-              <div className="main-topbar-buffer" />
-              <Grid item sm={2}>
-                <Paper className="main-grid-item">
-                  <UserList setTopName={this.setTopName}
-                            setContext={this.setContext} checked={this.state.checked}
-                            userIsLoggedIn={this.state.userIsLoggedIn}
-                  />
-                </Paper>
-              </Grid>
-              <Grid item sm={10}>
-                <Paper className="main-grid-item">
-                <Switch>
-                  <Route path="/login-register"
-                         render={this.getLogin}
-                  />
-                  {
-                    this.state.userIsLoggedIn ?
-                        <Route path="/users/:userId"
-                               render={props => <UserDetail {...props} setContext={this.setContext}
-
-                               />}
-                        />
-                        :
-                        <Redirect path="/users/:id" to="/login-register" />
-                  }
-                  {
-                    this.state.userIsLoggedIn ?
-                        <Route path="/photos/:userId"
-                               render={props => <UserPhotos {...props}
-                                                            setContext={this.setContext}
-                                                            checked={this.state.checked}
-                                                            upload={this.state.upload}
-                               />}
-                        />
-                        :
-                        <Redirect path="/users/:id" to="/login-register" />
-                  }
-                  {
-                    this.state.userIsLoggedIn ?
-                        <Route path="/comments/:userId"
-                               render={props => <UserComments {...props} setContext={this.setContext}
-                                                              checked={this.state.checked}/>}
-                        />
-                        :
-                        <Redirect path="/users/:id" to="/login-register" />
-                  }
-                  {
-                    this.state.userIsLoggedIn ?
-                        <Route path="/favorites"
-                               render={props => <FavoriteList {...props} setContext={this.setContext}
-                                                              user={this.state.user} />}
-                        />
-                        :
-                        <Redirect path="/users/:id" to="/login-register" />
-                  }
-                  {
-                    this.state.userIsLoggedIn ?
-                        <Route path="/users" component={UserList} />
-                        :
-                        <Redirect path="/users/:id" to="/login-register" />
-                  }
-                  <Route render={this.getRoot} />
-                </Switch>
-                </Paper>
-              </Grid>
+      <BrowserRouter>
+        <div>
+          <Grid container spacing={8}>
+            <Grid item xs={12}>
+              <TopBar topName={this.state.topname} />
             </Grid>
-          </div>
-        </BrowserRouter>
+            <div className="main-topbar-buffer" />
+            <Grid item sm={2}>
+              <Paper className="main-grid-item">
+                <UserList setTopName={this.setTopName} />
+              </Paper>
+            </Grid>
+            <Grid item sm={10}>
+              
+                <Switch>
+                  <Route
+                    exact
+                    path="/"
+                    render={() => (
+                      <Typography variant="body1">
+                        {/* Welcome to your photosharing app! This{' '}
+                        <a href="https://mui.com/components/paper/">Paper</a> component
+                        displays the main content of the application. The {'"sm={9}"'} prop in
+                        the <a href="https://mui.com/components/grid/">Grid</a> item component makes it responsively
+                        display 9/12 of the window. The Switch component enables us to conditionally render different
+                        components to this part of the screen. You don't need to display anything here on the homepage,
+                        so you should delete this Route component once you get started. */}
+                      </Typography>
+                    )}
+                  />
+                  <Route path="/users/:userId" component={UserDetail} />
+                  <Route path="/photos/:userId" component={UserPhotos} />
+                  <Route path="/users" component={UserList} />
+                </Switch>
+              
+            </Grid>
+          </Grid>
+        </div>
+      </BrowserRouter>
     );
   }
 }
