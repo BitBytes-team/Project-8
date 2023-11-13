@@ -344,5 +344,4 @@ class UserDetail extends React.Component {
     );
   }
 }
-
 export default UserDetail;
