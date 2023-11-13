@@ -1,38 +1,39 @@
 "use strict";
 
-/*
- * Defined the Mongoose Schema and return a Model for a Photo
+const mongoose = require("mongoose");
+
+/**
+ * Define the Mongoose Schema for a Comment.
  */
-
-/* jshint node: true */
-
-var mongoose = require('mongoose');
-
-/*
- * Photo can have comments and we stored them in the Photo object itself using
- * this Schema:
- */
-var commentSchema = new mongoose.Schema({
-    comment: String,     // The text of the comment.
-    date_time: {type: Date, default: Date.now}, // The date and time when the comment was created.
-    user_id: mongoose.Schema.Types.ObjectId,    // 	The ID of the user who created the comment.
-    // A specific data type that is used to store unique
-    //  identifiers for documents within a MongoDB collection,
-    //
-    // Also to create a relationship between different collections.
+const commentSchema = new mongoose.Schema({
+  // The text of the comment.
+  comment: String,
+  // The date and time when the comment was created.
+  date_time: { type: Date, default: Date.now },
+  // The ID of the user who created the comment.
+  user_id: mongoose.Schema.Types.ObjectId,
 });
 
-// create a schema for Photo
-var photoSchema = new mongoose.Schema({
-    file_name: String, // 	Name of a file containing the actual photo (in the directory project6/images).
-    date_time: {type: Date, default: Date.now}, // 	The date and time when the photo was added to the database
-    user_id: mongoose.Schema.Types.ObjectId, // The ID of the user who created the photo.
-    comments: [commentSchema] // Array of comment objects representing the comments made on this photo.
+/**
+ * Define the Mongoose Schema for a Photo.
+ */
+const photoSchema = new mongoose.Schema({
+  // Name of the file containing the photo (in the project6/images directory).
+  file_name: String,
+  // The date and time when the photo was added to the database.
+  date_time: { type: Date, default: Date.now },
+  // The ID of the user who created the photo.
+  user_id: mongoose.Schema.Types.ObjectId,
+  // Array of comment objects representing the comments made on this photo.
+  comments: [commentSchema],
 });
 
-// the schema is useless so far
-// we need to create a model using it
-var Photo = mongoose.model('Photo', photoSchema);
+/**
+ * Create a Mongoose Model for a Photo using the photoSchema.
+ */
+const Photo = mongoose.model("Photo", photoSchema);
 
-// make this available to our photos in our Node applications
+/**
+ * Make this available to our application.
+ */
 module.exports = Photo;
