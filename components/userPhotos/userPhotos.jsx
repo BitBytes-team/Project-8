@@ -9,8 +9,8 @@ class UserPhotos extends React.Component {
     this.state = {
       photos: null,
       add_comment: false,
-      current_photo_id: null,
-      new_comment: '',
+      current_photo_id: undefined,
+      new_comment: undefined,
     };
   }
 
@@ -71,29 +71,43 @@ class UserPhotos extends React.Component {
   handleCancelAddComment = () => {
     this.setState({
       add_comment: false,
-      new_comment: '',
-      current_photo_id: null,
+      new_comment: undefined,
+      current_photo_id: undefined,
     });
   };
 
-  // Event handler for submitting the new comment
   handleSubmitAddComment = () => {
-    const { current_photo_id, new_comment } = this.state;
-
-    axios.post(`/commentsOfPhoto/${current_photo_id}`, { comment: new_comment })
-      .then(() => {
-        console.log('Comment added to the database successfully');
-
-        this.setState({
-          add_comment: false,
-          new_comment: '',
-          current_photo_id: null,
+    const currentState = JSON.stringify({comment: this.state.new_comment});
+    const photo_id = this.state.current_photo_id;
+    const user_id = this.state.user_id;
+    axios.post("/commentsOfPhoto/" + photo_id,
+        currentState,
+        {
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        // eslint-disable-next-line no-unused-vars
+        .then((response) =>
+        {
+            this.setState({
+                add_comment : false,
+                new_comment: undefined,
+                current_photo_id: undefined
+            });
+            axios.get("/photosOfUser/" + user_id)
+                // eslint-disable-next-line no-shadow
+                .then((response) =>
+                {
+                    this.setState({
+                        photos: response.data
+                    });
+                });
+        })
+        .catch( error => {
+            console.log(error);
         });
-      })
-      .catch((error) => {
-        console.error('Error adding comment:', error);
-      });
-  };
+};
 
   render() {
     const { photos } = this.state;
@@ -203,8 +217,8 @@ class UserPhotos extends React.Component {
                 />
               </DialogContent>
               <DialogActions>
-                <Button onClick={this.handleCancelAddComment}>Cancel</Button>
-                <Button onClick={this.handleSubmitAddComment}>Add</Button>
+                <Button onClick={() => {this.handleCancelAddComment();}}>Cancel</Button>
+                <Button onClick={() => {this.handleSubmitAddComment();}}>Add</Button>
               </DialogActions>
             </Dialog>
           </div>
