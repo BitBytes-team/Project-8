@@ -1,19 +1,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import { Grid, Typography, Paper} from '@mui/material';
+import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom';
+import { Grid, Paper } from '@mui/material';
 import './styles/main.css';
 
 import TopBar from './components/topBar/TopBar';
 import UserDetail from './components/userDetail/userDetail';
 import UserList from './components/userList/userList';
 import UserPhotos from './components/userPhotos/userPhotos';
+import LoginRegister from './components/loginRegister/loginRegister';
 
 class PhotoShare extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       topname: '',
+      user: null,
+      // eslint-disable-next-line react/no-unused-state
+      main_content: undefined, // Add main_content state
     };
   }
 
@@ -21,43 +25,65 @@ class PhotoShare extends React.Component {
     this.setState({ topname: name });
   };
 
-  render() {  
+  changeUser = (user) => {
+    this.setState({ user });
+  };
+
+  // Add changeMainContent function
+  changeMainContent = (content) => {
+    // eslint-disable-next-line react/no-unused-state
+    this.setState({ main_content: content });
+  };
+
+  render() {
     return (
       <BrowserRouter>
         <div>
           <Grid container spacing={8}>
             <Grid item xs={12}>
-              <TopBar topName={this.state.topname} />
+              <TopBar
+                topName={this.state.topname}
+                user={this.state.user}
+                changeUser={this.changeUser}
+              />
             </Grid>
             <div className="main-topbar-buffer" />
             <Grid item sm={2}>
-              <Paper className="main-grid-item">
-                <UserList setTopName={this.setTopName} />
-              </Paper>
+              {this.state.user ? (
+                <Paper className="main-grid-item">
+                  {this.state.user ? <UserList setTopName={this.setTopName} /> : null}
+                </Paper>
+              ) : null}
             </Grid>
             <Grid item sm={10}>
-              
+              <Paper className="main-grid-item">
                 <Switch>
-                  <Route
-                    exact
-                    path="/"
-                    render={() => (
-                      <Typography variant="body1">
-                        {/* Welcome to your photosharing app! This{' '}
-                        <a href="https://mui.com/components/paper/">Paper</a> component
-                        displays the main content of the application. The {'"sm={9}"'} prop in
-                        the <a href="https://mui.com/components/grid/">Grid</a> item component makes it responsively
-                        display 9/12 of the window. The Switch component enables us to conditionally render different
-                        components to this part of the screen. You don't need to display anything here on the homepage,
-                        so you should delete this Route component once you get started. */}
-                      </Typography>
-                    )}
-                  />
-                  <Route path="/users/:userId" component={UserDetail} />
-                  <Route path="/photos/:userId" component={UserPhotos} />
-                  <Route path="/users" component={UserList} />
+                {
+                this.state.user ?
+                    <Route path="/users/:userId" render={ props => <UserDetail {...props} changeMainContent={this.changeMainContent}/> }/>
+                    :
+                    <Redirect path="/users/:userId" to="/login-register" />
+              }
+              {
+                this.state.user ?
+                    <Route path="/photos/:userId" render ={ props => <UserPhotos {...props} changeMainContent={this.changeMainContent}/> }/>
+                    :
+                    <Redirect path="/photos/:userId" to="/login-register" />
+              }
+              {
+                this.state.user ?
+                    <Route path="/" render={() => (<div/>)}/>
+                    :
+                    <Route path="/login-register" render ={ props => <LoginRegister {...props} changeUser={this.changeUser}/> } />
+              }
+               {
+                this.state.user ?
+                    <Route path="/" render={() => (<div/>)}/>
+                    :
+                    <Route path="/" render ={ props => <LoginRegister {...props} changeUser={this.changeUser}/> } />
+              }
                 </Switch>
-              
+              </Paper>
             </Grid>
           </Grid>
         </div>
