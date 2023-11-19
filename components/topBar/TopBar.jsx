@@ -81,67 +81,77 @@ class TopBar extends React.Component {
         }
     }
 
-  render() {
-    return this.state.app_info ? (
-      <AppBar className="topbar-appBar" position="absolute">
-        <Toolbar>
-            <Typography variant="h5" component="div" sx={{ flexGrow: 0 }} color="inherit">
-                {
-                this.props.user ?
-                    (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: 'fit-content',
-                                '& svg': {
-                                    m: 1.5,
-                                },
-                                '& hr': {
-                                    mx: 0.5,
-                                },
-                            }}
-                        >
-                            <span>{"Hi " + this.props.user.first_name}</span>
-                            <Divider orientation="vertical" flexItem/>
-                            <Button variant="contained" onClick={this.handleLogout}>Logout</Button>
-                            <Divider orientation="vertical" flexItem/>
-                            <Button
-                                component = "label"
-                                variant = "contained"
-                            >
-                                Add Photo
-                                <input
-                                    type="file"
-                                    accept = "image/*"
-                                    hidden
-                                    ref={(domFileRef) => { this.uploadInput = domFileRef; }}
-                                    onChange={this.handleNewPhoto}
-                                />
-                            </Button>
-                            <Snackbar anchorOrigin={{vertical: 'top', horizontal: 'left'}} open={this.state.photo_upload_show} autoHideDuration={6000} onClose={this.handleClose}>
-                                {
-                                    this.state.photo_upload_success ?
-                                        <Alert onClose={this.handleClose} severity="success" sx={{ width: '100%' }}>Photo Uploaded</Alert> :
-                                        this.state.photo_upload_error ?
-                                            <Alert onClose={this.handleClose} severity="error" sx={{ width: '100%' }}>Error Uploading Photo</Alert> :
-                                            <div/>
-                                }
-                            </Snackbar>
-                        </Box>
-                    )
-                :
-                    ("Please Login")
-                }
-            </Typography>
-            <Typography variant="h5" component="div" sx={{ flexGrow: 1 }} color="inherit" align="center">{this.props.main_content}</Typography>
-            <Typography variant="h5" component="div" sx={{ flexGrow: 0 }} color="inherit">Version: {this.state.app_info.version}</Typography>
-        </Toolbar>
-      </AppBar>
-    ) : (
-        <div/>
-    );
-  }
+    render() {
+        return this.state.app_info ? (
+            <AppBar className="topbar-appBar" position="absolute">
+                <Toolbar>
+                    <Typography variant="h5" component="div" sx={{ flexGrow: 0 }} color="inherit">
+                        {
+                            this.props.user ?
+                                (
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            width: 'fit-content',
+                                            '& svg': {
+                                                m: 1.5,
+                                            },
+                                            '& hr': {
+                                                mx: 0.5,
+                                            },
+                                        }}
+                                    >
+                                        <div>
+                                            <Typography variant="h5" color="white">
+                                                BITBYTES
+                                            </Typography>
+                                            <Typography variant="h6" color="white">
+                                                {this.props.topName}
+                                            </Typography>
+                                            <div style={{ height: '20px' }}></div>
+                                            <span>{"Hi " + this.props.user.first_name}</span>
+                                        </div>
+
+                                        <Divider orientation="vertical" flexItem/>
+                                        <Button variant="contained" onClick={this.handleLogout}>Logout</Button>
+                                        <Divider orientation="vertical" flexItem/>
+                                        <Button
+                                            component = "label"
+                                            variant = "contained"
+                                        >
+                                            Add Photo
+                                            <input
+                                                type="file"
+                                                accept = "image/*"
+                                                hidden
+                                                ref={(domFileRef) => { this.uploadInput = domFileRef; }}
+                                                onChange={this.handleNewPhoto}
+                                            />
+                                        </Button>
+                                        <Snackbar anchorOrigin={{vertical: 'top', horizontal: 'left'}} open={this.state.photo_upload_show} autoHideDuration={6000} onClose={this.handleClose}>
+                                            {
+                                                this.state.photo_upload_success ?
+                                                    <Alert onClose={this.handleClose} severity="success" sx={{ width: '100%' }}>Photo Uploaded</Alert> :
+                                                    this.state.photo_upload_error ?
+                                                        <Alert onClose={this.handleClose} severity="error" sx={{ width: '100%' }}>Error Uploading Photo</Alert> :
+                                                        <div/>
+                                            }
+                                        </Snackbar>
+                                    </Box>
+                                )
+                                :
+                                ("Please Login")
+                        }
+                    </Typography>
+                    <Typography variant="h5" component="div" sx={{ flexGrow: 1 }} color="inherit" align="center">{this.props.main_content}</Typography>
+                    <Typography variant="h5" component="div" sx={{ flexGrow: 0 }} color="inherit">Version: {this.state.app_info.version}</Typography>
+                </Toolbar>
+            </AppBar>
+        ) : (
+            <div/>
+        );
+    }
 }
 
 export default TopBar;
