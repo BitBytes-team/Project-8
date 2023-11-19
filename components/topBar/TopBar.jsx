@@ -102,17 +102,13 @@ class TopBar extends React.Component {
                                             },
                                         }}
                                     >
-                                        <div>
-                                            <Typography variant="h5" color="white">
-                                                BITBYTES
-                                            </Typography>
-                                            <Typography variant="h6" color="white">
-                                                {this.props.topName}
-                                            </Typography>
-                                            <div style={{ height: '20px' }}></div>
-                                            <span>{"Hi " + this.props.user.first_name}</span>
-                                        </div>
-
+                                        <Typography variant="h5" color="white">
+                                            BITBYTES
+                                        </Typography>
+                                        <Typography variant="h6" color="white">
+                                            {this.props.topName}
+                                        </Typography>
+                                        <span>{"Hi " + this.props.user.first_name}</span>
                                         <Divider orientation="vertical" flexItem/>
                                         <Button variant="contained" onClick={this.handleLogout}>Logout</Button>
                                         <Divider orientation="vertical" flexItem/>
