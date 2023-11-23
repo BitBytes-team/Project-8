@@ -1,22 +1,32 @@
 import React from 'react';
-import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material';
+import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import './userPhotos.css';
+import axios from 'axios'; // Import Axios
+import TopBar from '../topBar/TopBar';
 
 class UserPhotos extends React.Component {
   constructor(props) {
     super(props);
+
     this.state = {
-      photos: null,
+      photos: [],
+      user: null,
+      comment: null,
+      new_comment: '', // Step 1: Add state for new comment
       add_comment: false,
-      current_photo_id: undefined,
-      new_comment: undefined,
+      current_photo_id: null,
     };
+
+    // Bind event handlers to the instance
+    this.handleShowAddComment = this.handleShowAddComment.bind(this);
+    this.handleNewCommentChange = this.handleNewCommentChange.bind(this);
+    this.handleCancelAddComment = this.handleCancelAddComment.bind(this);
+    this.handleSubmitAddComment = this.handleSubmitAddComment.bind(this);
   }
 
   componentDidMount() {
-    this.fetchUserPhotos();
-    this.fetchVersionInfo();
+    this.fetchUserPhotosAndDetails();
   }
 
   componentDidUpdate(prevProps) {
@@ -24,207 +34,197 @@ class UserPhotos extends React.Component {
     const { userId } = match.params;
 
     if (prevProps.match.params.userId !== userId) {
-      this.fetchUserPhotos();
+      this.fetchUserPhotosAndDetails();
     }
   }
 
-  fetchUserPhotos() {
+  fetchUserPhotosAndDetails() {
     const { match } = this.props;
     const { userId } = match.params;
 
+    // Use Axios to fetch user photos from the server
     axios.get(`/photosOfUser/${userId}`)
-      .then((data) => {
-        this.setState({ photos: data.data });
+      .then((response) => {
+        this.setState({ photos: response.data });
+      })
+      .catch((error) => {
+        console.error('Error fetching user photos:', error);
+      });
+
+    // Use Axios to fetch user details from the server
+    axios.get(`/user/${userId}`)
+      .then((response) => {
+        this.setState({
+          user: response.data,
+          comment: response.data ? response.data.comment : null,
+        });
       })
       .catch((error) => {
         console.error('Error fetching user details:', error);
       });
   }
 
-  fetchVersionInfo() {
-    axios.get('/test/info')
-      .then((data) => {
-        // eslint-disable-next-line react/no-unused-state
-        this.setState({ version: data.data });
-      })
-      .catch((error) => {
-        console.error('Error fetching version info:', error);
-      });
-  }
-
-  // Event handler for showing the add comment dialog
-  handleShowAddComment = (photo_id) => {
+  // Step 2: Create an event handler for showing the add comment dialog
+  handleShowAddComment = (event) => {
+    const photo_id = event.currentTarget.getAttribute('photo_id');
     this.setState({
       add_comment: true,
       current_photo_id: photo_id,
     });
   };
 
-  // Event handler for changing the new comment text
+  // Step 3: Create a dialog for adding comments
+  renderAddCommentDialog() {
+    return (
+      <Dialog open={this.state.add_comment}>
+        <DialogTitle>Add Comment</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Enter a new comment for the photo.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="comment"
+            label="Comment"
+            multiline
+            rows={4}
+            fullWidth
+            variant="standard"
+            onChange={this.handleNewCommentChange}
+            value={this.state.new_comment}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={this.handleCancelAddComment}>Cancel</Button>
+          <Button onClick={this.handleSubmitAddComment}>Add</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  handleSubmitAddComment = () => {
+    const { current_photo_id, new_comment } = this.state;
+  
+    // Use Axios to send the new comment to the server
+    axios.post(`/commentsOfPhoto/${current_photo_id}`, { comment: new_comment })
+      .then(() => {
+        // Log a message indicating that the comment was added to the database
+        console.log('Comment added to the database successfully');
+  
+        // Update state to close the dialog and reset new_comment
+        this.setState({
+          add_comment: false,
+          new_comment: '',
+          current_photo_id: null,
+        });
+      })
+      .catch((error) => {
+        console.error('Error adding comment:', error);
+      });
+  };
+  
+
+  // Step 1: Add a handler for changing the new comment text
   handleNewCommentChange = (event) => {
     this.setState({
       new_comment: event.target.value,
     });
   };
 
-  // Event handler for canceling the add comment dialog
+  // Step 5: Add a handler for canceling the add comment dialog
   handleCancelAddComment = () => {
     this.setState({
       add_comment: false,
-      new_comment: undefined,
-      current_photo_id: undefined,
+      new_comment: '',
+      current_photo_id: null,
     });
   };
 
-  handleSubmitAddComment = () => {
-    const currentState = JSON.stringify({comment: this.state.new_comment});
-    const photo_id = this.state.current_photo_id;
-    const user_id = this.state.user_id;
-    axios.post("/commentsOfPhoto/" + photo_id,
-        currentState,
-        {
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        // eslint-disable-next-line no-unused-vars
-        .then((response) =>
-        {
-            this.setState({
-                add_comment : false,
-                new_comment: undefined,
-                current_photo_id: undefined
-            });
-            axios.get("/photosOfUser/" + user_id)
-                // eslint-disable-next-line no-shadow
-                .then((response) =>
-                {
-                    this.setState({
-                        photos: response.data
-                    });
-                });
-        })
-        .catch( error => {
-            console.log(error);
-        });
-};
-
   render() {
-    const { photos } = this.state;
+    const { photos, user, comment } = this.state;
     const { match } = this.props;
     const { userId } = match.params;
+    const topNameValue = user ? `User photos for ${user.first_name} ${user.last_name}` : '';
 
     return (
       <div>
-        {photos ? (
-          <div>
-            <Button
-              component={Link}
-              to={`/users/${userId}`}
-              variant="contained"
-              color="primary"
-              style={{ boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)' }}
-            >
-              User Details
-            </Button>
+        <TopBar topName={topNameValue} user={user}/>
+        <Button
+          component={Link}
+          to={`/users/${userId}`}
+          variant="contained"
+          className="ButtonLink"
+        >
+          User Details
+        </Button>
+        <Typography
+          variant="h4"
+          className="UserPhotosHeader"
+        >
+          User Photos
+        </Typography>
+        <div className="photo-list">
+          {photos.map((photo) => (
+            <div key={photo._id} className="photo-item">
+              <img
+                src={`/images/${photo.file_name}`}
+                className="photo-image"
+              />
+              <div className="user-photo-box" style={{ marginTop: '16px' }}>
+                <Typography variant="caption" className="user-photo-title">
+                  Date Taken
+                </Typography>
+                <Typography variant="body1" className="user-photo-value">
+                  {photo.date_time}
+                </Typography>
+              </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-              {photos.map((photo) => (
-                <div
-                  key={photo._id}
-                  style={{
-                    margin: '10px',
-                    padding: '10px',
-                    border: '1px solid #ccc',
-                    borderRadius: '5px',
-                    boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
-                    backgroundColor: '#fff',
-                  }}
-                >
-                  <img
-                    src={`/images/${photo.file_name}`}
-                    alt={photo.file_name}
-                    style={{ maxWidth: '100%', height: 'auto' }}
-                  />
-                  <p style={{ margin: 0 }}><b>Date Taken:</b> {photo.date_time}</p>
-
-                  {photo.comments && photo.comments.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: '10px',
-                        padding: '10px',
-                        border: '1px solid #ccc',
-                        borderRadius: '5px',
-                        backgroundColor: '#f5f5f5',
-                        boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
-                      }}
-                    >
-                      <p style={{ margin: 0, fontWeight: 'bold' }}>Comments:</p>
-                      {photo.comments.map((comment) => (
-                        <div
-                          key={comment._id}
-                          style={{
-                            margin: '10px',
-                            padding: '10px',
-                            border: '1px solid #ccc',
-                            borderRadius: '5px',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
-                          }}
-                        >
-                          <p style={{ margin: 0 }}>{comment.comment}</p>
-                          <p style={{ margin: 0, fontStyle: 'italic' }}>
-                            <b>Commented ON:</b> {comment.date_time}
-                          </p>
-                          <p style={{ margin: 0, fontStyle: 'italic' }}>
-                            <b>Commented BY:</b>
-                            <Link to={`/users/${comment.user._id}`}>{comment.user.first_name} {comment.user.last_name}</Link>
-                          </p>
-                        </div>
-                      ))}
+              {photo.comments && photo.comments.length > 0 && (
+                <div>
+                  <p style={{ margin: 0, fontWeight: 'bold' }}>Comments:</p>
+                  {photo.comments.map((userComment) => (
+                    <div key={userComment._id} className="user-photo-box" style={{ marginTop: '16px' }}>
+                      <p>{userComment.comment}</p>
+                      <p>
+                        <b>Commented ON:</b> {userComment.date_time}
+                      </p>
+                      <p>
+                        <b>Commented BY:</b>
+                        <Link to={`/users/${userComment.user._id}`}>{userComment.user.first_name} {userComment.user.last_name}</Link>
+                      </p>
                     </div>
-                  )}
-
-                  {/* Button to show the add comment dialog */}
-                  <Button
-                    variant="contained"
-                    onClick={() => this.handleShowAddComment(photo._id)}
-                  >
+                  ))}
+                  <Button photo_id={photo._id} variant="contained" onClick={this.handleShowAddComment}>
                     Add Comment
                   </Button>
                 </div>
-              ))}
+              )}
             </div>
+          ))}
+        </div>
 
-            {/* Add Comment Dialog */}
-            <Dialog open={this.state.add_comment}>
-              <DialogTitle>Add Comment</DialogTitle>
-              <DialogContent>
-                <DialogContentText>
-                  Enter a new comment for the photo.
-                </DialogContentText>
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  id="comment"
-                  label="Comment"
-                  multiline
-                  rows={4}
-                  fullWidth
-                  variant="standard"
-                  onChange={this.handleNewCommentChange}
-                  value={this.state.new_comment}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => {this.handleCancelAddComment();}}>Cancel</Button>
-                <Button onClick={() => {this.handleSubmitAddComment();}}>Add</Button>
-              </DialogActions>
-            </Dialog>
+        {user ? (
+          <div>
+            {comment && (
+              <div className="user-photo-box" style={{ marginTop: '16px' }}>
+                <Typography variant="caption" className="user-photo-title">
+                  Comment
+                </Typography>
+                <Typography variant="body1" className="user-photo-value">
+                  {comment}
+                </Typography>
+              </div>
+            )}
           </div>
         ) : (
-          <p>No photos available</p>
+          <Typography variant="body1" className="user-detail-box loading-text">
+            Loading user details...
+          </Typography>
         )}
+
+        {/* Step 3: Render the add comment dialog */}
+        {this.renderAddCommentDialog()}
       </div>
     );
   }
