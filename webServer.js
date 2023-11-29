@@ -53,11 +53,13 @@ const processFormBody = multer({storage: multer.memoryStorage()}).single('upload
 
 app.use(session({secret: "secretKey", resave: false, saveUninitialized: false}));
 app.use(bodyParser.json());
+app.use('/images', express.static('images'));
 
 // Load the Mongoose schema for User, Photo, and SchemaInfo
 const User = require("./schema/user.js");
 const Photo = require("./schema/photo.js");
 const SchemaInfo = require("./schema/schemaInfo.js");
+const Activity = require("./schema/activity.js");
 
 // XXX - Your submission should work without this line. Comment out or delete
 // this line for tests and before submission!
@@ -236,7 +238,7 @@ app.post("/user", function (request, response) {
 /**
  * URL /photos/new - adds a new photo for the current user
  */
-app.post("/photos/new", function (request, response) {
+/*app.post("/photos/new", function (request, response) {
   if (hasNoUserSession(request, response)) return;
   const user_id = getSessionUserID(request) || "";
   if (user_id === "") {
@@ -274,6 +276,49 @@ app.post("/photos/new", function (request, response) {
             response.status(500).send(JSON.stringify(err));
           });
     });
+  });
+});*/
+
+app.post('/photos/new', function(request, response){
+  if(!Object.prototype.hasOwnProperty.call(request.session,"user_id")){
+      response.status(401).send("please login");
+      return;
+  }
+  processFormBody(request, response, function (err) {
+      if (err || !request.file) {      
+          response.status(400).send(JSON.stringify(err));
+          return;
+      }
+      if(request.file.fieldname !== "uploadedphoto"){
+          response.status(400).send("wrong filename");
+          return;
+      } 
+      const timestamp = new Date().valueOf();
+      const filename = 'U' +  String(timestamp) + request.file.originalname;
+      console.log('Generated filename:', filename);
+      fs.writeFile("./images/" + filename, request.file.buffer, function (err1) {
+          if(err1){
+              response.status(400).send(JSON.stringify(err1));
+              return;
+          }
+          function doneCallback(err2, photo) {
+              if(err2){
+                  response.status(500).send(JSON.stringify(err2));
+                  return;
+              }
+              photo.save();
+              let obj = {};
+              obj.file_name = photo.file_name;
+
+              response.status(200).send(obj);
+          }
+          let photo = {};
+          photo.file_name = filename;
+          photo.date_time = timestamp;
+          photo.user_id = request.session.user_id;
+          photo.comments = [];
+          Photo.create(photo,doneCallback);
+      });
   });
 });
 
@@ -352,17 +397,44 @@ app.post("/admin/login", function (request, response) {
   });
 });
 
-/**
- * URL /admin/logout - clears user session
- */
-app.post("/admin/logout", function (request, response) {
-  //session.user = undefined;
-  //response.clearCookie('user');
-  request.session.destroy(() => {
-    session.user_id = undefined;
-    response.end();
+
+/*app.post('/admin/logout', (request, response) => {
+  // return status code 400 if user is currently not logged in
+  if (!request.session.userIdRecord) {
+      response.status(400).json({ message: "User is not logged in" });
+      console.log("You already logged out, no need to do again.");
+  } else {
+      // clear the information stored in the session
+      request.session.destroy(err => {
+          // return status code 400 if error occurs during destroying session
+          if (err) {
+              console.log("Error in destroying the session");
+              response.status(400).send();
+          }
+          else {
+              // Delete session successfully, send 200 code!
+              console.log("OK");
+              response.status(200).send();
+          }
+      });
+  }
+})*/
+
+app.post('/admin/logout', (req, res) => {
+  // Assuming you are using a session-based authentication
+  // Destroy the session to log the user out
+  req.session.destroy((err) => {
+      if (err) {
+          console.error('Error destroying session during logout:', err);
+          // Handle any errors or send an appropriate response
+          res.status(500).send('Internal Server Error');
+      } else {
+          // Send a success response
+          res.status(200).send('Logout successful');
+      }
   });
 });
+
 
 /**
  * URL /user/list - Returns all the User objects.
@@ -456,6 +528,55 @@ app.get("/photosOfUser/:id", function (request, response) {
         else response.status(500).send();
         return null;
       });
+});
+
+app.post('/newActivity', function(request, response) {
+  console.log('Received request to /newActivity');
+  let newActivity = request.body;
+  console.log('Request body:', newActivity);
+  console.log(request.body);
+  function done_callback(err, newActivity1) {
+      if(err) {
+          console.error('Error:', err);
+          response.status(500).send(JSON.stringify(err));
+          return;
+      }
+      newActivity1.save(function(err1, result) {
+          if(err1) {
+              response.status(500).send(JSON.stringify(err1));
+              return;
+          }
+          response.status(200).send(result);
+      });
+  }
+  Activity.create(newActivity, done_callback);
+});
+
+app.get('/activity', function(request, response) {
+  if (!Object.prototype.hasOwnProperty.call(request.session, 'user_id')) {
+      response.status(401).send("Please login.");
+      return;
+  }
+  Activity.find({}, function(err, query) {
+      if (err) {
+          response.status(500).send(JSON.stringify(err));
+          return;
+      }
+      if (query.length === 0) {
+          response.status(400).send("No activity get");
+          return;
+      }
+
+      function sortRule(x, y) {
+          return y.date_time - x.date_time;
+          // return y.date_time.toString().localeCompare(x.date_time.toString());
+      }
+      query.sort(sortRule);
+      console.log(query.length);
+      let output = query.slice(0, Math.min(5, query.length));
+      console.log(output);
+      response.status(200).send(output);
+  });
 });
 
 const server = app.listen(3000, function () {
