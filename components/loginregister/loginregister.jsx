@@ -43,8 +43,7 @@ const LoginRegister = ({ changeUser }) => {
 
   const handleLogin = () => {
     const currentState = JSON.stringify(user);
-    axios
-      .post('/admin/login', currentState, {
+    axios.post('/admin/login', currentState, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -55,6 +54,12 @@ const LoginRegister = ({ changeUser }) => {
         setShowRegistrationSuccess(false);
         setShowRegistrationError(false);
         changeUser(userData);
+        let obj1 = {};
+        obj1.date_time = new Date().valueOf();
+        obj1.name = response.data.name;
+        obj1.user_id = response.data._id;
+        obj1.type = "logging in";
+        axios.post('/newActivity', obj1);
       })
       .catch((error) => {
         setShowLoginError(true);
@@ -100,6 +105,12 @@ const LoginRegister = ({ changeUser }) => {
         setOpenRegistration(false);
         setShowRequiredFieldsWarning(false);
         changeUser(userData);
+        let obj = {};
+        obj.name = response.data.name;
+        obj.user_id = response.data._id;
+        obj.date_time = new Date().valueOf();
+        obj.type = "User Registered";
+        axios.post('/newActivity', obj);
       })
       .catch((error) => {
         setShowRegistrationError(true);
