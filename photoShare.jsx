@@ -1,7 +1,4 @@
-
-
 /* eslint-disable import/order */
-// My solution
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -13,12 +10,15 @@ import {
 } from '@mui/material';
 import './styles/main.css';
 
+
 // import necessary components
+import Activity from './components/activityFeed/ActivityFeed';
 import TopBar from './components/topBar/TopBar';
 import UserDetail from './components/userDetail/userDetail';
 import UserList from './components/userList/userList';
 import UserPhotos from './components/userPhotos/userPhotos';
 import LoginRegister from "./components/loginRegister/loginRegister";
+
 
 import {Redirect} from "react-router";
 
@@ -58,7 +58,7 @@ class PhotoShare extends React.Component {
           <Paper className="main-grid-item">
             {
               this.userIsLoggedIn() ? <UserList/> : <div></div>
-            }
+            } 
           </Paper>
         </Grid>
         <Grid item sm={9}>
@@ -78,17 +78,26 @@ class PhotoShare extends React.Component {
               }
               {
                 this.userIsLoggedIn() ?
-                    <Route path="/" render={() => (<div/>)}/>
+                    <Route path="/login-register" render={() => (<div/>)}/>
                     :
                     <Route path="/login-register" render ={ props => <LoginRegister {...props} changeUser={this.changeUser}/> } />
               }
-               {
+              {this.userIsLoggedIn() ? (
+                    <Route
+                      path="/activity"
+                      render={(props) => (
+                        <Activity {...props} user={this.state.user} />
+                      )}
+                    />
+                  ) : (
+                    <Redirect path="/activity" to="/login-register" />
+                  )}
+              {
                 this.userIsLoggedIn() ?
                     <Route path="/" render={() => (<div/>)}/>
                     :
                     <Route path="/" render ={ props => <LoginRegister {...props} changeUser={this.changeUser}/> } />
               }
-
             </Switch>
           </Paper>
         </Grid>
