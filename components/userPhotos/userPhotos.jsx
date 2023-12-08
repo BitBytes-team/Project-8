@@ -1,11 +1,12 @@
 import React from 'react';
-import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField } from '@mui/material';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import { Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, TextField,IconButton } from '@mui/material';
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
+import ThumbDownAltIcon from '@mui/icons-material/ThumbDownAlt';
 import { Link } from 'react-router-dom';
 import './userPhotos.css';
 import axios from 'axios'; // Import Axios
 import TopBar from '../topBar/TopBar';
-
+import { MentionsInput,Mention } from 'react-mentions';
 
 class UserPhotos extends React.Component {
   constructor(props) {
@@ -90,7 +91,7 @@ class UserPhotos extends React.Component {
           <DialogContentText>
             Enter a new comment for the photo.
           </DialogContentText>
-          <TextField
+          <MentionsInput
             autoFocus
             margin="dense"
             id="comment"
@@ -101,7 +102,27 @@ class UserPhotos extends React.Component {
             variant="standard"
             onChange={this.handleNewCommentChange}
             value={this.state.new_comment}
-          />
+            markup="display"
+            >
+            <Mention
+              trigger="@"
+              data={(search, callback) => {
+                // Fetch users based on the search term from your backend
+                // Adjust the following line according to your backend endpoint
+                axios.get(`/searchUsers?query=${search}`)
+                  .then(response => {
+                    callback(response.data.map(user => ({
+                      id: user._id,
+                      display: `${user.first_name} ${user.last_name}`, // Use template literals here
+                    })));
+                  })
+                  .catch(error => {
+                    console.error('Error fetching users:', error);
+                    callback([]);
+                  });
+              }}
+            />
+          </MentionsInput>
         </DialogContent>
         <DialogActions>
           <Button onClick={this.handleCancelAddComment}>Cancel</Button>
@@ -118,7 +139,7 @@ class UserPhotos extends React.Component {
     passObj.comment = this.state.addedComment;
   
     // Use Axios to send the new comment to the server
-    axios.post(`/commentsOfPhoto/${current_photo_id}`, { comment: new_comment })
+    axios.post(`/commentsOfPhoto/${current_photo_id}`, { comment: new_comment ,sharing_list: this.state.photo.sharing_list} )
       .then((res) => {
         // Log a message indicating that the comment was added to the database
         console.log('Comment added to the database successfully');
@@ -148,7 +169,7 @@ class UserPhotos extends React.Component {
       });
   };
 
-  handleLikePhoto = (photoId) => {
+  /*handleLikePhoto = (photoId) => {
     const likedPhotos = [...this.state.likedPhotos];
     const index = likedPhotos.indexOf(photoId);
     if (index === -1) {
@@ -159,8 +180,41 @@ class UserPhotos extends React.Component {
         this.setState({ likedMessage: '' });
     }
     this.setState({ likedPhotos });
+  };*/
+
+  handleLike = (photoId) => {
+    const { photos, user } = this.state;
+    const alreadyLiked = photos.some(photo => photo.likes && photo.likes.includes(user._id));
+
+    if (alreadyLiked) {
+      alert('This photo has already been liked by a user!');
+      return;
+    }
+
+    // Proceed to like the specific photo
+    axios.post(`/likePhoto/${photoId}`)
+      .then((response) => {
+        console.log(response);
+        console.log('Photo liked successfully');
+
+        this.fetchUserPhotosAndDetails();
+      })
+      .catch((error) => {
+        console.error('Error liking photo:', error);
+      });
   };
 
+  handleUnlike = (photoId) => {
+    axios.post(`/unlikePhoto/${photoId}`)
+      .then((response) => {
+        console.log(response);
+        console.log('Photo unliked successfully');
+        this.fetchUserPhotosAndDetails();
+      })
+      .catch((error) => {
+        console.error('Error unliking photo:', error);
+      });
+  };
 
   // Step 1: Add a handler for changing the new comment text
   handleNewCommentChange = (event) => {
@@ -182,7 +236,16 @@ class UserPhotos extends React.Component {
     axios.post(`/deletePhoto/${photoId}`)
       .then((result) => {
         console.log(result.data); // Log the server response
-        this.fetchUserPhotosAndDetails(); // Refresh the photos after deletion
+        this.fetchUserPhotosAndDetails(); 
+        // Refresh the photos after deletion
+        // Get the commented photo details
+        const deletecommentPhotoDetails = this.state.photos.find(photo => photo._id === photoId);
+        let obj = {};
+        obj.name = result.data.name;
+        obj.date_time = new Date().valueOf();
+        obj.type = "deleted photo";
+        obj.deleted_photo_file_name = deletecommentPhotoDetails.file_name;
+        axios.post('/newActivity', obj);
       })
       .catch((err) => {
         console.log(photoId);
@@ -190,6 +253,23 @@ class UserPhotos extends React.Component {
       });
   };
 
+  handleDeleteComment = (passObj,photo_id) => {
+    let body = {};
+    // console.log(passObj);
+    body.commentId = passObj._id;
+    console.log(body);
+    // console.log({this.state.photo});
+    axios.post(`deleteComment/${photo_id}`, body)
+    .then(result => {
+        console.log(result);
+        this.props.handlePhotosChange(); 
+        // this.setState({photo : this.props.photo});
+    })
+    .catch(err => {
+        console.log(err);
+    });
+    // event.preventDefault();
+};
 
   render() {
     const { photos, user, comment ,likedPhotos, likedMessage} = this.state;
@@ -221,6 +301,31 @@ class UserPhotos extends React.Component {
                 src={`/images/${photo.file_name}`}
                 className="photo-image"
               />
+              <div>
+                <IconButton
+                  onClick={() => this.handleLike(photo._id)}
+                  style={{
+                    color: photo.likes && photo.likes.includes(userId) ? '#1976D2' : 'inherit',
+                  }}
+                >
+                <ThumbUpAltIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() => this.handleUnlike(photo._id)}
+                  color={photo.likes && photo.likes.includes(userId) ? '#1976D2' : 'inherit'}
+                >
+                <ThumbDownAltIcon />
+                </IconButton>
+                <span>{photo.likes ? photo.likes.length : 0} Likes </span>
+                {photo.likes && photo.likes.length > 0 && (
+                  <span style={{ marginLeft: '120px', color: '#1976D2' }}>
+                    Liked successfully!
+                  </span>
+                )}
+              </div>
+              {photo.user_id === userId && (
+                    <Button onClick={() => {console.log(photo.file_name);this.handleDeletePhoto(photo._id);}}> Delete the Photo </Button>
+                  )}
               <div className="user-photo-box" style={{ marginTop: '16px' }}>
                 <Typography variant="caption" className="user-photo-title">
                   Date Taken
@@ -229,18 +334,41 @@ class UserPhotos extends React.Component {
                   {photo.date_time}
                 </Typography>
               </div>
-              <div className="like-button">
-                <ThumbUpIcon
-                  onClick={() => this.handleLikePhoto(photo._id)}
-                  color={likedPhotos.includes(photo._id) ? 'primary' : 'action'}/>
-                  <span>{likedPhotos.includes(photo._id) ? 'Liked' : ''}</span>
-              </div>
-
               {photo.comments && photo.comments.length > 0 && (
                 <div>
                   <p style={{ margin: 0, fontWeight: 'bold' }}>Comments:</p>
                   {photo.comments.map((userComment) => (
                     <div key={userComment._id} className="user-photo-box" style={{ marginTop: '16px' }}>
+                      <p>
+                        <b>
+                          Comment:
+                        </b>
+                        {userComment.comment.split(' ').map((word, index) => {
+                          if (word.startsWith('@')) {
+                            //console.log(word);
+                            console.log(userComment);
+                            const fullWord = userComment.comment.split(' ').slice(index, index + 2).join(' ');
+                            //console.log(fullWord);
+                           // const mentionId = fullWord.substring(2);
+                           // console.log(mentionId);
+                            const start = userComment.comment.indexOf('[');
+                            const end = userComment.comment.indexOf(']', start);
+                            if (start !== -1 && end !== -1) {
+                                var idStart = fullWord.indexOf('(');
+                                var idEnd = fullWord.indexOf(')', idStart);
+                                var id = fullWord.substring(idStart + 1, idEnd);
+                                console.log(id);
+                                var mentionId = userComment.comment.substring(start + 1, end);
+                                console.log(mentionId);
+                            }
+                            return(
+                              <Link key={index} to={`/users/${id}`}>
+                                {mentionId}   
+                              </Link>  
+                            );
+                          }
+                        })}
+                      </p>
                       <p>{userComment.comment}</p>
                       <p>
                         <b>Commented ON:</b> {userComment.date_time}
@@ -249,14 +377,18 @@ class UserPhotos extends React.Component {
                         <b>Commented BY:</b>
                         <Link to={`/users/${userComment.user._id}`}>{userComment.user.first_name} {userComment.user.last_name}</Link>
                       </p>
+                      {photo.user_id === userId && (
+                        <Button onClick={() => {console.log(userComment); 
+                        console.log(photo._id); 
+                        this.handleDeleteComment(userComment,photo._id);}}> Delete the Comment 
+                        </Button>
+                     )}
                     </div>
                   ))}
                   <Button photo_id={photo._id} variant="contained" onClick={this.handleShowAddComment}>
                     Add Comment
                   </Button>
-                  {photo.user_id === userId && (
-                    <Button onClick={() => {console.log(photo.file_name);this.handleDeletePhoto(photo._id);}}> Delete the Photo </Button>
-                  )}
+                  
                 </div>
               )}
             </div>
