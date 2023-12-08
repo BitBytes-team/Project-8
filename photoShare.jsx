@@ -1,4 +1,5 @@
 /* eslint-disable import/order */
+// My solution
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -57,7 +58,7 @@ class PhotoShare extends React.Component {
         <Grid item sm={3}>
           <Paper className="main-grid-item">
             {
-              this.userIsLoggedIn() ? <UserList/> : <div></div>
+              this.userIsLoggedIn() ? <UserList user={this.state.user}/> : <div></div>
             } 
           </Paper>
         </Grid>
