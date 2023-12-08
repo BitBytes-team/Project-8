@@ -1,0 +1,56 @@
+Story number and name: 4- Activity Feed
+Story points: 4 
+Brief description to see the story in action:
+The introduction of the Activity Feed feature significantly enriches the user experience by offering a centralized view of recent activities on the photo-sharing site. Accessible through a dedicated "Activities" button on the topBar, this feed presents users with the five most recent activities.
+Each activity entry in the feed includes essential details such as the date and time of the activity, the name of the user responsible, and the type of activity performed. For specific activities, additional information is provided, such as a small thumbnail of the uploaded photo or the comment author's name. 
+
+Story number and name: 5 - Deleting Comments, Users and Photos
+Story points: 4 
+Brief description to see the story in action:
+Empowering users with the ability to delete their own content and account, the platform now supports the deletion of comments, photos, and entire user accounts. This feature adheres to a comprehensive approach, ensuring that users can only delete content they own.
+When user or comment or photo is deleted, all associated details are permanently expunged from the database providing a thorough and secure deletion process.
+
+Story number and name: 6 - Photos Like Votes
+Story points: 4 
+Brief description to see the story in action:
+The implementation of the "like" button for photos introduces a powerful mechanism for users to express their appreciation and acknowledgment of captivating content. Clicking the like button on a photo triggers a visual change, indicating the user's liking of the photo. To enhance user experience, the system also provides a visual indication if the user has already liked a particular photo.
+The like count, displayed adjacent to the like button, dynamically updates in real-time, reflecting the collective appreciation of the community for each photo. The user's photo page is intelligently sorted based on the number of likes in descending order, with additional sorting by timestamp in reverse chronological order for photos with an equal number of likes.
+
+Story number and name: 2 - @mentions in comments
+Story points: 6 
+Brief description to see the story in action:
+Incorporating the @mention feature into photo comments enhances user interaction on the platform. Users can now seamlessly mention other users within their comments by utilizing the '@' symbol, followed by an intelligent user selection mechanism. This feature not only adds a social aspect to the commenting system but also allows for better communication and engagement among users.
+To ensure the validity of mentions, the system prevents users from mentioning non-existent users, thus maintaining the integrity of the platform. Additionally, the @mentions are intelligently marked within the comment text, providing a visual cue to both the commenter and the mentioned user. 
+
+
+Story number and name: 8 - Sidebar List marks User with new Activity
+Story points: 3
+Brief description to see the story in action:
+The enhancement of the sidebar user list now includes a valuable feature that marks users with their most recent activity on the platform. Users can quickly glance at the sidebar to see the last activity performed by each user, adding a layer of dynamism and engagement to the user interface.
+The marked activities encompass a variety of user actions, such as posting a photo, adding a comment, registering as a user, logging in, and logging out. This visual representation not only distinguishes the current user but also provides a snapshot of the recent engagement levels of other users, fostering a sense of community and interactivity. The refresh feature ensures that the sidebar reflects the latest activities across the platform.
+
+
+
+Total Story Points: 21 
+
+Marketing Video URL (ensure permissions are set to public viewing):
+
+Is it OK if we post your Marketing Video URL on the class discussion forum?
+[Yes/No] Yes
+
+Any special instructions for grading (it should be easy for someone to run your
+app from a new machine):
+
+Running instructions:
+
+npm install
+npm install react-mentions
+npm install @mui/icons-material
+npm run build:w
+node loaddatabase.js
+node webserver.js 
+
+We have to login 2 times to enter into the photosharing app. We are facing this login problem in some laptops so if login dint work for the first time make sure to login again to enter into app.
+
+
+
