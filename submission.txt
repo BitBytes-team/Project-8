@@ -50,7 +50,7 @@ npm run build:w
 node loaddatabase.js
 node webserver.js 
 
-We have to login 2 times to enter into the photosharing app. We are facing this login problem in some laptops so if login dint work for the first time make sure to login again to enter into app.
+We have to login 2 times to enter into the photosharing app. We are facing this login problem in some laptops so if login dint work for the first time make sure to login again to enter into app. The logout button will only work when it is redirected or clicked through the topBar i.e the activity component.
 
 
 
