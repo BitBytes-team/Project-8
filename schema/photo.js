@@ -24,6 +24,8 @@ const photoSchema = new mongoose.Schema({
   date_time: { type: Date, default: Date.now },
   // The ID of the user who created the photo.
   user_id: mongoose.Schema.Types.ObjectId,
+  sharing_list: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // New field for sharing list
+  likes: {type:[mongoose.Schema.Types.ObjectId],default:[]},
   // Array of comment objects representing the comments made on this photo.
   comments: [commentSchema],
 });
