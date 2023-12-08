@@ -10,6 +10,10 @@ var activitySchema = new mongoose.Schema({
     uploaded_photo_file_name: {type: String, default: null},
     commented_photo_file_name: {type:String, default: null},
     commented_photo_author: {type: String, default: null},
+    deleted_photo_file_name: {type:String, default: null},
+    deleted_comment_file_name: {type:String, default: null},
+    liked_photo_file_name: {type:String, default: null},
+    Unliked_photo_file_name: {type:String, default: null},
 });
 
 var Activity = mongoose.model('Activity', activitySchema);
