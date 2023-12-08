@@ -42,6 +42,7 @@ Is it OK if we post your Marketing Video URL on the class discussion forum?
 Any special instructions for grading (it should be easy for someone to run your
 app from a new machine):
 
+If you are facing any errors while npm run build:w is executed please follow the below instruction.
 Running instructions:
 
 npm install
