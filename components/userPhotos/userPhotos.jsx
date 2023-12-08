@@ -198,6 +198,13 @@ class UserPhotos extends React.Component {
         console.log('Photo liked successfully');
 
         this.fetchUserPhotosAndDetails();
+        const likedPhotoDetails = this.state.photos.find(photo => photo._id === photoId);
+        let obj = {};
+        obj.name = response.data.name;
+        obj.date_time = new Date().valueOf();
+        obj.type = "Liked photo";
+        obj.liked_photo_file_name = likedPhotoDetails.file_name;
+        axios.post('/newActivity', obj);
       })
       .catch((error) => {
         console.error('Error liking photo:', error);
@@ -210,6 +217,13 @@ class UserPhotos extends React.Component {
         console.log(response);
         console.log('Photo unliked successfully');
         this.fetchUserPhotosAndDetails();
+        const UnlikedPhotoDetails = this.state.photos.find(photo => photo._id === photoId);
+        let obj = {};
+        obj.name = response.data.name;
+        obj.date_time = new Date().valueOf();
+        obj.type = "Unliked photo";
+        obj.Unliked_photo_file_name = UnlikedPhotoDetails.file_name;
+        axios.post('/newActivity', obj);
       })
       .catch((error) => {
         console.error('Error unliking photo:', error);
@@ -262,8 +276,18 @@ class UserPhotos extends React.Component {
     axios.post(`deleteComment/${photo_id}`, body)
     .then(result => {
         console.log(result);
-        this.props.handlePhotosChange(); 
+        //this.props.handlePhotosChange(); 
         // this.setState({photo : this.props.photo});
+        this.fetchUserPhotosAndDetails(); 
+        // Refresh the photos after deletion
+        // Get the commented photo details
+        const deletecommentPhotoDetails = this.state.photos.find(photo => photo._id === photo_id);
+        let obj = {};
+        obj.name = result.data.name;
+        obj.date_time = new Date().valueOf();
+        obj.type = "deleted comment";
+        obj.deleted_comment_file_name = deletecommentPhotoDetails.file_name;
+        axios.post('/newActivity', obj);
     })
     .catch(err => {
         console.log(err);
@@ -339,14 +363,12 @@ class UserPhotos extends React.Component {
                   <p style={{ margin: 0, fontWeight: 'bold' }}>Comments:</p>
                   {photo.comments.map((userComment) => (
                     <div key={userComment._id} className="user-photo-box" style={{ marginTop: '16px' }}>
+                      <p>{userComment.comment}</p>
                       <p>
-                        <b>
-                          Comment:
-                        </b>
-                        {userComment.comment.split(' ').map((word, index) => {
+                        {userComment.comment.split(' ').filter(word => word.startsWith('@')).map((word, index) => {
                           if (word.startsWith('@')) {
                             //console.log(word);
-                            console.log(userComment);
+                            //console.log(userComment);
                             const fullWord = userComment.comment.split(' ').slice(index, index + 2).join(' ');
                             //console.log(fullWord);
                            // const mentionId = fullWord.substring(2);
@@ -354,22 +376,27 @@ class UserPhotos extends React.Component {
                             const start = userComment.comment.indexOf('[');
                             const end = userComment.comment.indexOf(']', start);
                             if (start !== -1 && end !== -1) {
+                                var mentionId = userComment.comment.substring(start + 1, end);
+                                console.log(mentionId);
                                 var idStart = fullWord.indexOf('(');
                                 var idEnd = fullWord.indexOf(')', idStart);
                                 var id = fullWord.substring(idStart + 1, idEnd);
                                 console.log(id);
-                                var mentionId = userComment.comment.substring(start + 1, end);
-                                console.log(mentionId);
                             }
                             return(
-                              <Link key={index} to={`/users/${id}`}>
-                                {mentionId}   
-                              </Link>  
+                              <div key={index}>
+                              <Link to={`/users/${id}`}>
+                                {mentionId}
+                              </Link>
+                              <Link to={`/mentionedPhotos/${id}`}>
+                              </Link>
+                            </div> 
                             );
+                          }else{
+                            return word + ' ';
                           }
                         })}
                       </p>
-                      <p>{userComment.comment}</p>
                       <p>
                         <b>Commented ON:</b> {userComment.date_time}
                       </p>
