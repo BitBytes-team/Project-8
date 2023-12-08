@@ -56,6 +56,8 @@ Promise.all(removePromises)
         location: user.location,
         description: user.description,
         occupation: user.occupation,
+        login_name: user.last_name.toLowerCase(),
+        password: "weak",
       })
         .then(function (userObj) {
           // Set the unique ID of the object. We use the MongoDB generated _id
