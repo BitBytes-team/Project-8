@@ -334,7 +334,6 @@ app.post("/commentsOfPhoto/:photo_id", function (request, response) {
   if (hasNoUserSession(request, response)) return;
   const id = request.params.photo_id || "";
   const user_id = getSessionUserID(request) || "";
-  const mentionedUserIds = extractMentionedUserIds(comment);
   const comment = request.body.comment || "";
   if (id === "") {
     response.status(400).send("id required");
@@ -358,7 +357,6 @@ app.post("/commentsOfPhoto/:photo_id", function (request, response) {
             _id: new mongoose.Types.ObjectId()
           }
         },
-        $addToSet: { mentioned_users: { $each: mentionedUserIds } }, 
       }, 
         function (err, returnValue) {
     if (err) {
