@@ -39,8 +39,8 @@ class Activity extends React.Component {
 
         for (let i = 0; i < this.state.activityList.length; i++) {
             let cur = this.state.activityList[i];
-            console.log('Uploaded Photo File Name:', cur.uploaded_photo_file_name);
-            console.log(cur);
+            //console.log('Uploaded Photo File Name:', cur.uploaded_photo_file_name);
+            //console.log(cur);
             innerHTML.push(
                 <Typography variant="body2" key = {i}>
                     <br/>
@@ -50,6 +50,10 @@ class Activity extends React.Component {
                     {cur.commented_photo_author !== null && `${cur.commented_photo_author}'s photo`}
                     {cur.uploaded_photo_file_name !== null && <> <br/> <img src ={`/images/${cur.uploaded_photo_file_name}`} width={120} height={120} /> </> }
                     {cur.commented_photo_file_name !== null && <> <br/> <img src ={"/images/" + cur.commented_photo_file_name} width = {120} height ={120} /> </>}
+                    {cur.deleted_photo_file_name !== null && <> <br/> <img src ={"/images/" + cur.deleted_photo_file_name} width = {120} height ={120} /> </>}
+                    {cur.deleted_comment_file_name !== null && <> <br/> <img src ={"/images/" + cur.deleted_comment_file_name} width = {120} height ={120} /> </>}
+                    {cur.liked_photo_file_name !== null && <> <br/> <img src ={"/images/" + cur.liked_photo_file_name} width = {120} height ={120} /> </>}
+                    {cur.Unliked_photo_file_name !== null && <> <br/> <img src ={"/images/" + cur.Unliked_photo_file_name} width = {120} height ={120} /> </>}
                     <br/>
                 </Typography>
             );
