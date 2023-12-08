@@ -44,7 +44,7 @@ const fs = require("fs");
 
 const express = require("express");
 const app = express();
-
+const router = express.Router();
 const session = require("express-session");
 const bodyParser = require("body-parser");
 const multer = require("multer");
@@ -60,6 +60,11 @@ const User = require("./schema/user.js");
 const Photo = require("./schema/photo.js");
 const SchemaInfo = require("./schema/schemaInfo.js");
 const Activity = require("./schema/activity.js");
+const photoSchema = new mongoose.Schema({
+  // ... other fields
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  mentioned_users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+});
 
 // XXX - Your submission should work without this line. Comment out or delete
 // this line for tests and before submission!
@@ -329,6 +334,7 @@ app.post("/commentsOfPhoto/:photo_id", function (request, response) {
   if (hasNoUserSession(request, response)) return;
   const id = request.params.photo_id || "";
   const user_id = getSessionUserID(request) || "";
+  const mentionedUserIds = extractMentionedUserIds(comment);
   const comment = request.body.comment || "";
   if (id === "") {
     response.status(400).send("id required");
@@ -351,7 +357,9 @@ app.post("/commentsOfPhoto/:photo_id", function (request, response) {
             "user_id": new mongoose.Types.ObjectId(user_id),
             _id: new mongoose.Types.ObjectId()
           }
-        } }, 
+        },
+        $addToSet: { mentioned_users: { $each: mentionedUserIds } }, 
+      }, 
         function (err, returnValue) {
     if (err) {
       // Query returned an error. We pass it back to the browser with an
@@ -514,7 +522,15 @@ app.get("/photosOfUser/:id", function (request, response) {
             .then((photos) => {
               if (photos.length === 0 && typeof (photos) === "object") photos = [];
               // We got the object - return it in JSON format.
-              response.end(JSON.stringify(photos));
+               // Sorting logic
+              const sortedPhotos = photos.sort((a, b) => {
+                if (b.likes.length !== a.likes.length) {
+                  return b.likes.length - a.likes.length;
+                } else {
+                  return new Date(b.date_time) - new Date(a.date_time);
+                }
+              });
+              response.end(JSON.stringify(sortedPhotos));
             }).catch((err) => {
               console.error("Error in /photosOfUser/:id", err);
               response.status(500).send(JSON.stringify(err));
@@ -578,6 +594,245 @@ app.get('/activity', function(request, response) {
       response.status(200).send(output);
   });
 });
+
+// Endpoint for liking a photo
+app.post(`/likePhoto/:photoId`, function (request, response) {
+  const userId = getSessionUserID(request);
+  const photoId = request.params.photoId;
+
+  Photo.findByIdAndUpdate(
+    photoId,
+    { $addToSet: { likes: userId } },
+    { new: true },
+    function (err, updatedPhoto) {
+      if (err) {
+        console.error("Error in /likePhoto/:photoId", err);
+        response.status(500).send(JSON.stringify(err));
+        return;
+      }
+      response.end(JSON.stringify(updatedPhoto.likes));
+    }
+  );
+});
+// Endpoint for unliking a photo
+app.post(`/unlikePhoto/:photoId`, function (request, response) {
+  const userId = getSessionUserID(request);
+  const photoId = request.params.photoId;
+
+  Photo.findByIdAndUpdate(
+    photoId,
+    { $pull: { likes: userId } },
+    { new: true },
+    function (err, updatedPhoto) {
+      if (err) {
+        console.error("Error in /unlikePhoto/:photoId", err);
+        response.status(500).send(JSON.stringify(err));
+        return;
+      }
+      response.end(JSON.stringify(updatedPhoto.likes));
+    }
+  );
+});
+
+  // New route for searching users for mentions
+  app.get('/searchUsers', async (req, res) => {
+    try {
+      const { query } = req.query;
+
+      // Use a database query to find users based on the search term
+      // Replace this with your actual database query
+      const users = await User.find({
+        $or: [
+          { first_name: { $regex: query, $options: 'i' } },
+          { last_name: { $regex: query, $options: 'i' } },
+        ],
+      });
+
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+/*app.post('/deletePhoto/:photoId', function(request, response) {
+  console.log("second");
+  if (!Object.prototype.hasOwnProperty.call(request.session, 'user_id')) {
+    console.log("inner");
+    response.status(401).send("Please login.");
+    return;
+}
+
+  Photo.deleteOne({_id: request.params.photo_id}, function(err) {
+      if (err){
+       
+          response.status(500).send(JSON.stringify(err));
+          return;
+      }
+      response.status(200).send("Deleted Photo");
+  });
+
+});*/
+
+app.post('/deletePhoto/:photoId', function(request, response) {
+  console.log("second");
+  if (!Object.prototype.hasOwnProperty.call(request.session, 'user_id')) {
+    console.log("inner");
+    response.status(401).send("Please login.");
+    return;
+}
+
+  Photo.deleteOne({_id: request.params.photoId}, function(err) {
+      if (err){
+       
+          response.status(500).send(JSON.stringify(err));
+          return;
+      }
+      response.status(200).send("Deleted Photo");
+  });
+});
+
+app.post('/deleteComment/:photo_id', function(request, response) {
+  if (!Object.prototype.hasOwnProperty.call(request.session, 'user_id')) {
+      response.status(401).send("Please login.");
+      return;
+  }
+
+  let photo_id = request.params.photo_id;
+  let commentId = request.body.commentId;
+  Photo.findOne({_id : photo_id}, function(err, query){
+      if(err){ 
+          response.status(500).send(JSON.stringify(err));
+          return;
+      }
+      if(query === null){
+          response.status(400).send("Can't find the photo");
+          return;
+      }
+      
+      let commentList = query.comments;
+      commentList = commentList.filter(function(comment) {
+          return comment._id.toString() !== commentId;
+      });
+      query.comments = commentList;
+      query.save();
+      console.log("comment deleted");
+      response.status(200).send("comment deleted");
+  });
+
+});
+
+app.post('/deleteUser/:id', function (request, response) {
+  // if(request.session === null || request.session === undefined || request.session.user === null || request.session.user === undefined) {
+  //     response.status(401).send("User is not logged in.");
+  // } else {
+    var id = request.params.id;
+    // Photo.deleteMany({user_id: id}, function(error) {
+    //   if(error) {
+    //     console.log(error);
+    //     response.status(400).send('Exec error');
+    //     // return;
+    //   }
+    // });
+    Activity.deleteMany({user_id: id}, function(error) {
+      if(error) {
+        console.log(error);
+        response.status(400).send('Exec error');
+        // return;
+      }
+    });
+    Photo.find({}).exec(function(error, value) {
+      if(error) {
+        console.log(error);
+        response.status(400).send('Exec error');
+        return;
+      }
+      for(let i = 0; i < value.length; i++) {
+        var commentList = value[i].comments;
+        commentList = commentList.filter(function(comment) {
+          if(comment.user_id.toString() === id) {
+            return false;
+          } else {
+            return true;
+          }
+        });
+        value[i].comments = commentList;
+        var likeList = value[i].likes;
+        if(likeList.includes(id)) {
+          var index = likeList.indexOf(id);
+          likeList.splice(index, 1);
+          value[i].likes = likeList;
+        }
+        value[i].save();
+      }
+    });
+    User.deleteOne({_id: id}, function(error) {
+      if(error) {
+        console.log(error);
+        response.status(400).send('Exec error');
+        return;
+      }
+      request.session.destroy(function(error1) {
+        if(error1) {
+          console.log(error);
+          response.status(401).send();
+          
+        } else {
+          response.status(200).send();
+          
+        }
+      });
+    });
+  // }
+});
+
+// Endpoint to get mentioned photos for a user
+/*router.get('/mentionedPhotos/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find user by ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Find photos with comments that mention the user
+    const mentionedPhotos = await Photo.find({
+      'comments.user': userId,
+    });
+
+    // Prepare response data
+    const mentionedPhotosData = mentionedPhotos.map((photo) => ({
+      _id: photo._id,
+      file_name: photo.file_name,
+      user_id: photo.user_id,
+      owner_name: `${user.first_name} ${user.last_name}`,
+    }));
+
+    res.json(mentionedPhotosData);
+  } catch (error) {
+    console.error('Error fetching mentioned photos:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+module.exports = router;*/
+
+app.get('/mentionedPhotos/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const mentionedPhotos = await Photo.find({ mentioned_users: userId });
+
+    res.json(mentionedPhotos);
+  } catch (error) {
+    console.error('Error fetching mentioned photos:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 
 const server = app.listen(3000, function () {
   const port = server.address().port;
